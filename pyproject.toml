@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "textbook_nvim"
+version = "0.1.0"
+authors = [{name = "Juan Lara", email = "julara@unal.edu.co"}]
+description = "Main python package for the textbook.nvim plugin."
+requires-python = ">3.8"
+dependencies = [
+    "pydantic", "pynvim", "rich"
+]
+
+[project.optional-dependencies]
+complete = ["openai", "httpx"]
+openai = ["openai"]
+chatsonic = ["httpx"]
+dev = ["flit"]
+
+[tool.setuptools.packages.find]
+where = ["src/"]
+
+[project.scripts]
+gpttui = "gpttui.tui.main:cli"
+
