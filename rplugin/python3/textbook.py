@@ -1,14 +1,23 @@
+from uuid import uuid4
 from typing import Any, Iterable
 from pynvim import plugin, command
 from pynvim.api import Nvim, Buffer
 from textbook_nvim.parser import Parser
 from textbook_nvim.render import Renderer
+from pathlib import Path
 
 Args = Iterable[Any]
 
 @plugin
 class TextBook:
     buffer : Buffer
+    tb_buffer : Buffer
+    tmp_path : Path
+    active_cell: int
+    ns_id: int
+    parsed_path: Path
+    rendered_path: Path
+    extmark_id: Any = None
 
     def __init__(self, nvim: Nvim):
         self.nvim = nvim
@@ -21,30 +30,42 @@ class TextBook:
 
     @command("TextBookOpen", nargs=0, range="")
     def textbook_render(self, args: Args, range=None):
-
-        parsed_text = (
+        idx = str(uuid4()) 
+        self.parsed_path = Path("/tmp") / (idx + "_parsed")
+        self.rendered_path = Path("/tmp") / (idx + "_rendered")
+        self.tb_buffer = self.nvim.api.create_buf(False, True)
+        (
                 self.parser.set_text(
                     text = [str(i) for i in self.buffer]
                     )
                 .set_pattern()
                 .parse()
-                .get_parsed_text()
+                .save(self.parsed_path)
                 )
-        rendered_text = (
-                self.renderer
-                .setup(parsed_text)
-                .render()
-                .get_rendered_text()
-                )
-        buf = self.nvim.api.create_buf(False, True)
-        self.nvim.api.set_current_buf(buf)
-        filetype = self.nvim.api.buf_get_option(self.buffer.number, "filetype")
-        self.nvim.command(f"set syntax={filetype}")
+        self.nvim.api.set_current_buf(self.tb_buffer)
+        self.nvim.command(f"ter tbcli --parsed_path {str(self.parsed_path)} --rendered_path {str(self.rendered_path)}")
+        self.ns_id = self.nvim.api.create_namespace("cell_indicator")
 
-        for orig_cell, dest_cell in zip(parsed_text, rendered_text):
-            for line in dest_cell.text.split("\n"):
-                buf.append(line)
+    @command("TextBookSelectCell", nargs=0, range="")
+    def textbook_select_cell(self, args: Args, range=None):
+        self.renderer.load(self.rendered_path)
+        row = self.nvim.current.window.cursor[0]
+        for i, cell in enumerate(self.renderer.rendered_text.values):
+            if row >= cell.cell_range[0] and row < cell.cell_range[1]:
+                self.active_cell = i
+        line = self.renderer.rendered_text.values[self.active_cell].cell_range[0]
+        
+        if self.extmark_id is not None:
+            self.nvim.call("nvim_buf_del_extmark", self.tb_buffer.number, self.ns_id, self.extmark_id)
+        self.extmark_id = self.nvim.call(
+                "nvim_buf_set_extmark",
+                self.tb_buffer.number,
+                self.ns_id, line - 1, 0,
+                {"virt_text": [["◆"]], "virt_text_pos": "overlay"}
+                )
+        self.nvim.current.window.cursor = (line, 1)
 
     @command("TextBookClose", nargs=0, range="")
     def textbook_close(self, args: Args, range=None):
         self.nvim.api.set_current_buf(self.buffer)
+        self.nvim.api.buf_delete(self.tb_buffer.handle, {"force": True, "unload": True})
