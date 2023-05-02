@@ -1,19 +1,19 @@
 from uuid import uuid4
-from typing import Any, Iterable
+from typing import Any, List
 from pynvim import plugin, command
 from pynvim.api import Nvim, Buffer
 from textbook_nvim.parser import Parser
 from textbook_nvim.render import Renderer
 from pathlib import Path
 
-Args = Iterable[Any]
+Args = List[str]
 
 @plugin
 class TextBook:
     buffer : Buffer
     tb_buffer : Buffer
     tmp_path : Path
-    active_cell: int
+    active_cell: int = 0
     ns_id: int
     parsed_path: Path
     rendered_path: Path
@@ -46,13 +46,7 @@ class TextBook:
         self.nvim.command(f"ter tbcli --parsed_path {str(self.parsed_path)} --rendered_path {str(self.rendered_path)}")
         self.ns_id = self.nvim.api.create_namespace("cell_indicator")
 
-    @command("TextBookSelectCell", nargs=0, range="")
-    def textbook_select_cell(self, args: Args, range=None):
-        self.renderer.load(self.rendered_path)
-        row = self.nvim.current.window.cursor[0]
-        for i, cell in enumerate(self.renderer.rendered_text.values):
-            if row >= cell.cell_range[0] and row < cell.cell_range[1]:
-                self.active_cell = i
+    def select_cell(self):
         line = self.renderer.rendered_text.values[self.active_cell].cell_range[0]
         
         if self.extmark_id is not None:
@@ -64,6 +58,33 @@ class TextBook:
                 {"virt_text": [["◆"]], "virt_text_pos": "overlay"}
                 )
         self.nvim.current.window.cursor = (line, 1)
+
+    @command("TextBookSelectCell", nargs="*", range="") #type: ignore
+    def textbook_select_cell(self, args: Args, range=None):
+        self.renderer.load(self.rendered_path)
+
+        if not args:
+            row = self.nvim.current.window.cursor[0]
+            for i, cell in enumerate(self.renderer.rendered_text.values):
+                if row >= cell.cell_range[0] and row < cell.cell_range[1]:
+                    self.active_cell = i
+        else:
+            self.active_cell = int(args[0]) - 1
+        self.select_cell()
+
+    @command("TextBookSelectNextCell", nargs=0, range="")
+    def textbook_select_next_cell(self, args: Args, range=None):
+        self.renderer.load(self.rendered_path)
+        if self.active_cell != len(self.renderer.rendered_text.values) - 1:
+            self.active_cell += 1
+        self.select_cell()
+
+    @command("TextBookSelectPrevCell", nargs=0, range="")
+    def textbook_select_prev_cell(self, args: Args, range=None):
+        self.renderer.load(self.rendered_path)
+        if self.active_cell != 0:
+            self.active_cell -= 1
+            self.select_cell()
 
     @command("TextBookClose", nargs=0, range="")
     def textbook_close(self, args: Args, range=None):
