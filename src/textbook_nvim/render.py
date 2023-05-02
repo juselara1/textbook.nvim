@@ -7,6 +7,7 @@ from rich.console import Console
 from rich.syntax import Syntax
 from rich.markdown import Markdown
 from rich.panel import Panel
+from rich.text import Text
 from pathlib import Path
 
 class RenderedCell(BaseModel):
@@ -17,9 +18,10 @@ class RenderedText(BaseModel):
     values: List[RenderedCell]
 
 class AbstractRender(ABC):
-    def __init__(self, lexer: str = "python", comment_pattern: str="^#"):
+    def __init__(self, lexer: str = "python", comment_pattern: str="^#", cell_id:int = 1):
         self.lexer = lexer
         self.comment_pattern = comment_pattern
+        self.cell_id = cell_id
 
     def setup(self, parsed_cell: ParsedCell, console: Console, init_pos: int) -> "AbstractRender":
         self.parsed_cell = parsed_cell
@@ -37,10 +39,14 @@ class CodeRender(AbstractRender):
         lines = self.parsed_cell.text.split("\n")[1:]
         clean_text = "\n".join(lines)
         syntax = Syntax(clean_text, self.lexer)
+        text = Text(f" Cell {self.cell_id}")
+        text.stylize("bold #5180e6")
         with self.console.capture() as capture:
+            self.console.print(text)
             self.console.print(syntax)
             self.console.print(" ")
         result = capture.get()
+        self.console.print(text)
         self.console.print(syntax)
         self.console.print(" ")
         return RenderedCell(
@@ -55,9 +61,13 @@ class MarkdownRender(AbstractRender):
         clean_lines = map(lambda line: re.sub(self.comment_pattern, "", line), lines)
         clean_text = "\n".join(clean_lines)
         md = Panel(Markdown(clean_text), title="markdown")
+        text = Text(f" Cell {self.cell_id}")
+        text.stylize("bold #5180e6")
         with self.console.capture() as capture:
+            self.console.print(text)
             self.console.print(md)
         rendered_lines = capture.get().split("\n")
+        self.console.print(text)
         self.console.print(md)
         return RenderedCell(
                 text="\n".join(rendered_lines),
@@ -91,9 +101,9 @@ class Renderer:
     def render(self) -> "Renderer":
         self.rendered_text = RenderedText(values=[])
         init_pos = 1
-        for cell in self.parsed_text.values:
+        for i, cell in enumerate(self.parsed_text.values):
             self.rendered_text.values.append(
-                    self.renders[cell.cell_type](lexer=self.lexer)
+                    self.renders[cell.cell_type](lexer=self.lexer, cell_id=i + 1)
                     .setup(cell, self.console, init_pos)
                     .render()
                     )
