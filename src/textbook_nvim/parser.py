@@ -1,6 +1,7 @@
 import re
 from typing import List, Tuple
 from pydantic import BaseModel
+from pathlib import Path
 
 Text = List[str]
 
@@ -9,7 +10,8 @@ class ParsedCell(BaseModel):
     cell_type: str
     cell_range: Tuple[int, int]
 
-ParsedText = List[ParsedCell]
+class ParsedText(BaseModel):
+    values : List[ParsedCell]
 
 class Parser:
     text : Text
@@ -35,9 +37,9 @@ class Parser:
         if separator_positions[-1] != len(self.text):
             separator_positions.append(len(self.text))
 
-        self.parsed_text = []
+        self.parsed_text = ParsedText(values=[])
         for initial_pos, end_pos, cell_type in zip(separator_positions, separator_positions[1:], cell_types):
-            self.parsed_text.append(
+            self.parsed_text.values.append(
                     ParsedCell(
                         text="\n".join(self.text[initial_pos: end_pos]),
                         cell_type=cell_type,
@@ -48,3 +50,7 @@ class Parser:
 
     def get_parsed_text(self) -> ParsedText:
         return self.parsed_text
+
+    def save(self, path: Path):
+        with open(path, "w") as f:
+            f.write(self.parsed_text.json())
