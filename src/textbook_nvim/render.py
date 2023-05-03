@@ -18,10 +18,13 @@ class RenderedText(BaseModel):
     values: List[RenderedCell]
 
 class AbstractRender(ABC):
-    def __init__(self, lexer: str = "python", comment_pattern: str="^#", cell_id:int = 1):
+    def __init__(self, lexer: str, comment_pattern: re.Pattern, cell_id:int, theme: str, cell_text: str, cell_color: str):
         self.lexer = lexer
         self.comment_pattern = comment_pattern
         self.cell_id = cell_id
+        self.theme = theme
+        self.cell_text = cell_text
+        self.cell_color = cell_color
 
     def setup(self, parsed_cell: ParsedCell, console: Console, init_pos: int) -> "AbstractRender":
         self.parsed_cell = parsed_cell
@@ -39,8 +42,8 @@ class CodeRender(AbstractRender):
         lines = self.parsed_cell.text.split("\n")[1:]
         clean_text = "\n".join(lines)
         syntax = Syntax(clean_text, self.lexer)
-        text = Text(f" Cell {self.cell_id}")
-        text.stylize("bold #5180e6")
+        text = Text(self.cell_text.format(self.cell_id))
+        text.stylize(self.cell_color)
         with self.console.capture() as capture:
             self.console.print(text)
             self.console.print(syntax)
@@ -61,8 +64,8 @@ class MarkdownRender(AbstractRender):
         clean_lines = map(lambda line: re.sub(self.comment_pattern, "", line), lines)
         clean_text = "\n".join(clean_lines)
         md = Panel(Markdown(clean_text), title="markdown")
-        text = Text(f" Cell {self.cell_id}")
-        text.stylize("bold #5180e6")
+        text = Text(self.cell_text.format(self.cell_id))
+        text.stylize(self.cell_color)
         with self.console.capture() as capture:
             self.console.print(text)
             self.console.print(md)
@@ -79,6 +82,9 @@ class Renderer:
     rendered_text : RenderedText
     lexer: str
     pattern: re.Pattern
+    theme: str
+    cell_text: str
+    cell_color: str
     renders: Dict[str, Type[AbstractRender]] = {
             "raw": CodeRender,
             "markdown": MarkdownRender
@@ -90,12 +96,18 @@ class Renderer:
     def setup(
             self,
             parsed_text: ParsedText,
-            lexer: str = "python",
-            pattern: re.Pattern = re.compile(r"^#")
+            lexer: str,
+            pattern: re.Pattern,
+            theme: str,
+            cell_text: str,
+            cell_color: str
             ) -> "Renderer":
         self.parsed_text = parsed_text
         self.lexer = lexer
         self.pattern = pattern
+        self.theme = theme
+        self.cell_text = cell_text
+        self.cell_color = cell_color
         return self
     
     def render(self) -> "Renderer":
@@ -103,7 +115,13 @@ class Renderer:
         init_pos = 1
         for i, cell in enumerate(self.parsed_text.values):
             self.rendered_text.values.append(
-                    self.renders[cell.cell_type](lexer=self.lexer, cell_id=i + 1)
+                    self.renders[cell.cell_type](
+                        lexer=self.lexer, cell_id=i + 1,
+                        comment_pattern=self.pattern,
+                        cell_text=self.cell_text,
+                        cell_color=self.cell_color,
+                        theme=self.theme
+                        )
                     .setup(cell, self.console, init_pos)
                     .render()
                     )
