@@ -33,7 +33,6 @@ class TextBook:
         idx = str(uuid4()) 
         self.parsed_path = Path("/tmp") / (idx + "_parsed")
         self.rendered_path = Path("/tmp") / (idx + "_rendered")
-        self.tb_buffer = self.nvim.api.create_buf(False, True)
         (
                 self.parser.set_text(
                     text = [str(i) for i in self.buffer]
@@ -42,11 +41,23 @@ class TextBook:
                 .parse()
                 .save(self.parsed_path)
                 )
+
+        row = self.nvim.current.window.cursor[0] - 1
+        for i, cell in enumerate(self.parser.parsed_text.values):
+            if row >= cell.cell_range[0] and row < cell.cell_range[1]:
+                self.active_cell = i
+
+        self.tb_buffer = self.nvim.api.create_buf(False, True)
         self.nvim.api.set_current_buf(self.tb_buffer)
         self.nvim.command(f"ter tbcli --parsed_path {str(self.parsed_path)} --rendered_path {str(self.rendered_path)}")
         self.ns_id = self.nvim.api.create_namespace("cell_indicator")
 
+    @command("TextBookSync", nargs="*", range="") #type: ignore
+    def textbook_sync(self, args: Args, range=None):
+        self.select_cell()
+
     def select_cell(self):
+        self.renderer.load(self.rendered_path)
         line = self.renderer.rendered_text.values[self.active_cell].cell_range[0]
         
         if self.extmark_id is not None:
@@ -89,4 +100,6 @@ class TextBook:
     @command("TextBookClose", nargs=0, range="")
     def textbook_close(self, args: Args, range=None):
         self.nvim.api.set_current_buf(self.buffer)
+        line = self.parser.parsed_text.values[self.active_cell].cell_range[0]
+        self.nvim.current.window.cursor = (line + 1, 1)
         self.nvim.api.buf_delete(self.tb_buffer.handle, {"force": True, "unload": True})
