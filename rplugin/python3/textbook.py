@@ -34,16 +34,17 @@ class TextBook:
         self.nvim = nvim
         self.parser = Parser()
         self.renderer = Renderer()
+        self.load_config()
 
     def load_config(self):
         self.config = TextBookConfig(
                 tmp_path=self.nvim.vars.get("TextBookTmpPath") or "/tmp",
                 cell_indicator=self.nvim.vars.get("TextBookCellIndicator") or "◆",
                 cell_pattern=self.nvim.vars.get("TextBookCellPattern") or r"^# \%\% \[(?P<cell_type>\w+)\]",
-                cell_text=self.nvim.vars.get("TextBookCellText") or "Cell: {}",
-                cell_color=self.nvim.vars.get("TextBookCellColor") or "#5180e6",
+                cell_text=self.nvim.vars.get("TextBookCellText") or " Cell: {}",
+                cell_color=self.nvim.vars.get("TextBookCellColor") or r"\#5180e6",
                 theme=self.nvim.vars.get("TextBookTheme") or "gruvbox-dark",
-                comment_pattern=self.nvim.vars.get("TextBookCommentPattern") or "^#"
+                comment_pattern=self.nvim.vars.get("TextBookCommentPattern") or r"^\#"
                 )
 
     @command("TextBookBuffer", nargs=0, range="")
@@ -69,16 +70,16 @@ class TextBook:
             if row >= cell.cell_range[0] and row < cell.cell_range[1]:
                 self.active_cell = i
 
-        lexer = self.nvim.api.buf_get_option(self.buffer.number, "filetype")
+        lexer = self.nvim.call("nvim_buf_get_option", self.buffer.number, "filetype")
         self.tb_buffer = self.nvim.api.create_buf(False, True)
         self.nvim.api.set_current_buf(self.tb_buffer)
         self.nvim.command(
-                f"ter tbcli --parsed_path {str(self.parsed_path)} " +
-                f"--rendered_path {str(self.rendered_path)} " +
-                f"--lexer {lexer} --theme {self.config.theme} " +
-                f"--comment_pattern {self.config.comment_pattern} " +
-                f"--cell_text {self.config.cell_text} " +
-                f"--cell_color {self.config.cell_color}"
+                f"ter tbcli --parsed_path '{str(self.parsed_path)}' " +
+                f"--rendered_path '{str(self.rendered_path)}' " +
+                f"--lexer '{lexer}' --theme '{self.config.theme}' " +
+                f"--comment_pattern '{self.config.comment_pattern}' " +
+                f"--cell_text '{self.config.cell_text}' " +
+                f"--cell_color '{self.config.cell_color}'"
                 )
         self.ns_id = self.nvim.api.create_namespace("cell_indicator")
 
