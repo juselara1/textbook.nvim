@@ -74,7 +74,7 @@ class MarkdownRender(AbstractRender):
         self.console.print(md)
         return RenderedCell(
                 text="\n".join(rendered_lines),
-                cell_range=(self.init_pos, len(rendered_lines) - 1)
+                cell_range=(self.init_pos, self.init_pos + len(rendered_lines) - 2)
                 )
 
 class Renderer:
