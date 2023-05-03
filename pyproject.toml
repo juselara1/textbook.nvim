@@ -9,18 +9,12 @@ authors = [{name = "Juan Lara", email = "julara@unal.edu.co"}]
 description = "Main python package for the textbook.nvim plugin."
 requires-python = ">3.8"
 dependencies = [
-    "pydantic", "pynvim", "rich"
+    "pydantic", "pynvim", "rich", "click"
 ]
-
-[project.optional-dependencies]
-complete = ["openai", "httpx"]
-openai = ["openai"]
-chatsonic = ["httpx"]
-dev = ["flit"]
 
 [tool.setuptools.packages.find]
 where = ["src/"]
 
 [project.scripts]
-gpttui = "gpttui.tui.main:cli"
+tbcli = "textbook_nvim.cli:main"
 
