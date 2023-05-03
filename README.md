@@ -54,4 +54,38 @@ This will spawn a new buffer with the rendered text, there you have the followin
 
 ## Configuration
 
-**TODO**
+You can add the following lines to your `init.lua` configuration:
+
+```lua
+vim.g.TextBookTmpPath = "/tmp" -- config path.
+vim.g.TextBookCellIndicator = ">" -- indicator for cell selection.
+vim.g.TextBookCellPattern = "^# %% [(?P<cell_type>\\w+)]" -- pattern that defines the cell separator.
+vim.g.TextBookCellText = " Cell: {}" -- text to display the cells.
+vim.g.TextBookCellColor = "\\#5180E6" -- cell to display the cell id.
+vim.g.TextBookTheme = "vim" -- color highligthing theme.
+vim.g.TextBookCommentPattern = "^\\#" -- defines the markdown comment pattern.
+
+local mode = 'n'
+local options = {noremap=true, silent=true}
+
+local binds = {
+    {bind="<Leader>to", command=":TextBookOpen<CR>"},
+    {bind="<Leader>tr", command=":TextBookSync<CR>"},
+    {bind="<Leader>ti", command=":TextBookBuffer<CR>"},
+    {bind="<Leader>ts", command=":TextBookSelectCell<CR>"},
+    {bind="<Leader>tg", command=":TextBookSelectCell"},
+    {bind="<Leader>tj", command=":TextBookSelectNextCell<CR>"},
+    {bind="<Leader>tk", command=":TextBookSelectPrevCell<CR>"},
+    {bind="<Leader>tc", command=":TextBookClose<CR>"},
+}
+
+for _, value in pairs(binds) do
+    vim.api.nvim_set_keymap(
+            mode, value.bind, value.command, options
+        )
+end
+```
+
+> **Note**: all patterns must be implemented as Python regex.
+> **Note**: the cell separator must have the named group `cell_type`, this is used for parsing.
+> **Note**: `textbook.nvim` uses the `pygments` [styles](https://pygments.org/styles/).
