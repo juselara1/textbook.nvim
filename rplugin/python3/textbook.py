@@ -145,6 +145,7 @@ class TextBook:
         new_lines.extend([self.config.cell_separator.format(cell_type), " "])
         new_lines.extend(prev_lines[new_pos:])
         self.buffer[:] = new_lines
+        self.nvim.current.window.cursor = (new_pos + 2, 0)
 
     @command("TextBookSelectNextCell", nargs=0, range="")
     def textbook_select_next_cell(self, args: Args, range=None):
@@ -163,7 +164,7 @@ class TextBook:
     def close(self):
         self.nvim.api.set_current_buf(self.buffer)
         line = self.parser.parsed_text.values[self.active_cell].cell_range[0]
-        self.nvim.current.window.cursor = (line + 1, 1)
+        self.nvim.current.window.cursor = (line + 1, 0)
         self.nvim.api.buf_delete(self.tb_buffer.handle, {"force": True, "unload": True})
 
     @command("TextBookClose", nargs=0, range="")
