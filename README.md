@@ -51,6 +51,7 @@ This will spawn a new buffer with the rendered text, there you have the followin
 - `:TextBookNextCell`: selects the next cell.
 - `:TextBookPrevCell`: selects the previous cell.
 - `:TextBookAddCell cell_type after`: creates a cell of type `cell_type` (`raw` or `markdown`) and can be before (`0`) or after (`1`) the cell under the cursor.
+- `:TextBookConfig`: reloads the configuration.
 - `:TextBookClose`: closes the rendered view and places the cursor in the same cell as the rendered view.
 
 ## Configuration

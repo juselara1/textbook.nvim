@@ -49,6 +49,10 @@ class TextBook:
                 comment_pattern=self.nvim.vars.get("TextBookCommentPattern") or r"^\#"
                 )
 
+    @command("TextBookConfig", nargs=0, range="")
+    def textbook_config(self, args: Args, range=None):
+        self.load_config()
+
     @command("TextBookBuffer", nargs=0, range="")
     def textbook_buffer(self, args: Args, range=None):
         self.buffer = self.nvim.current.buffer
