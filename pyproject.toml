@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "textbook_nvim"
-version = "0.1.0"
+version = "0.2.0"
 authors = [{name = "Juan Lara", email = "julara@unal.edu.co"}]
 description = "Main python package for the textbook.nvim plugin."
 requires-python = ">3.8"
@@ -14,6 +14,9 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["src/"]
+
+[project.optional-dependencies]
+dev = ["flit"]
 
 [project.scripts]
 tbcli = "textbook_nvim.cli:main"
