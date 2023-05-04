@@ -50,6 +50,7 @@ This will spawn a new buffer with the rendered text, there you have the followin
 - `:TextBookSelectCell [cell_id]`: when no arguments are passed selects the cell under the cursor, otherwise, selects the cell of the `cell_id`.
 - `:TextBookNextCell`: selects the next cell.
 - `:TextBookPrevCell`: selects the previous cell.
+- `:TextBookAddCell cell_type after`: creates a cell of type `cell_type` (`raw` or `markdown`) and can be before (`0`) or after (`1`) the cell under the cursor.
 - `:TextBookClose`: closes the rendered view and places the cursor in the same cell as the rendered view.
 
 ## Configuration
@@ -59,7 +60,8 @@ You can add the following lines to your `init.lua` configuration:
 ```lua
 vim.g.TextBookTmpPath = "/tmp" -- config path.
 vim.g.TextBookCellIndicator = ">" -- indicator for cell selection.
-vim.g.TextBookCellPattern = "^# %% [(?P<cell_type>\\w+)]" -- pattern that defines the cell separator.
+vim.g.TextBookCellPattern = "^# %% [(?P<cell_type>\\w+)]" -- regex to parse the cell separator.
+vim.g.TextBookCellSeparator = "# %% {}" -- defines the cell separator.
 vim.g.TextBookCellText = " Cell: {}" -- text to display the cells.
 vim.g.TextBookCellColor = "\\#5180E6" -- cell to display the cell id.
 vim.g.TextBookTheme = "vim" -- color highligthing theme.
@@ -77,9 +79,13 @@ local binds = {
     {bind="<Leader>tj", command=":TextBookSelectNextCell<CR>"},
     {bind="<Leader>tk", command=":TextBookSelectPrevCell<CR>"},
     {bind="<Leader>tc", command=":TextBookClose<CR>"},
+    {bind="<Leader>tma", command=":TextBookAddCell markdown 1<CR>"},
+    {bind="<Leader>tmb", command=":TextBookAddCell markdown 0<CR>"},
+    {bind="<Leader>tra", command=":TextBookAddCell raw 1<CR>"},
+    {bind="<Leader>trb", command=":TextBookAddCell raw 0<CR>"},
 }
 
-for _, value in pairs(binds) do
+for _, value in ipairs(binds) do
     vim.api.nvim_set_keymap(
             mode, value.bind, value.command, options
         )
