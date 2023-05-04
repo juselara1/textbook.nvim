@@ -87,5 +87,7 @@ end
 ```
 
 > **Note**: all patterns must be implemented as Python regex.
+
 > **Note**: the cell separator must have the named group `cell_type`, this is used for parsing.
+
 > **Note**: `textbook.nvim` uses the `pygments` [styles](https://pygments.org/styles/).
