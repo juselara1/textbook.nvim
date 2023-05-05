@@ -1,12 +1,14 @@
+from enum import Enum
 import re
 from abc import ABC, abstractmethod
 from pydantic import BaseModel
 from textbook_nvim.parser import ParsedCell, ParsedText
-from typing import Dict, List, Tuple, Type
-from rich.console import Console
+from typing import Dict, List, Tuple, Type, Union
+from rich.console import Console, Group
 from rich.syntax import Syntax
 from rich.markdown import Markdown
 from rich.panel import Panel
+from rich.table import Table
 from rich.text import Text
 from pathlib import Path
 
@@ -57,13 +59,75 @@ class CodeRender(AbstractRender):
                 cell_range=(self.init_pos, self.init_pos + len(result.split("\n")) - 2)
                 )
 
+class MarkdownEnum(Enum):
+    TEXT = "TEXT"
+    TABLE = "TABLE"
+
+class MarkdownRow(BaseModel):
+    text: str
+    idx: int
+    md_type: MarkdownEnum
+
 class MarkdownRender(AbstractRender):
+    table_pattern = re.compile(r"\|.+\|")
+    sep_validator = re.compile(r"[\-\s]+")
+
+    def render_table(self, group: List[MarkdownRow]) -> Union[Markdown, Table]:
+        if re.search(self.sep_validator, "".join(group[1].text.split("|"))) is None:
+            return Markdown("\n".join(line.text for line in group))
+        table = Table()
+        headers = group[0].text.strip().split("|")
+        n_cols = len(headers)
+        [table.add_column(col) for col in headers]
+        for row in group[2:]:
+            cells = row.text.strip().split("|")
+            if len(cells) != n_cols:
+                return Markdown("\n".join(line.text for line in group))
+            table.add_row(*cells)
+        return table
+
+    def generate_components(self, groups: List[List[MarkdownRow]]) -> List[Union[Markdown, Table]]:
+        components = []
+        for group in groups:
+            if (
+                    group[0].md_type == MarkdownEnum.TEXT or
+                    len(group) < 3
+                    ):
+                components.append(
+                        Markdown(
+                            "\n".join(line.text for line in group)
+                            )
+                        )
+            else:
+                components.append(self.render_table(group))
+        return components
+
+    def render_lines(self, lines: List[str]) -> Group:
+        if len(lines) < 2:
+            return Group(Markdown("\n".join(lines)))
+        parsed_lines = []
+        for i, line in enumerate(lines):
+            if re.search(self.table_pattern, line) is not None:
+                md_type = MarkdownEnum.TABLE
+            else:
+                md_type = MarkdownEnum.TEXT
+            parsed_lines.append(MarkdownRow(text=line, idx=i, md_type=md_type))
+
+        groups = [[parsed_lines[0]]]
+        for i in range(1, len(parsed_lines)):
+            if parsed_lines[i].md_type == parsed_lines[i - 1].md_type:
+                groups[-1].append(parsed_lines[i])
+            else:
+                groups.append([parsed_lines[i]])
+
+        
+        components = self.generate_components(groups)
+        return Group(*components)
 
     def render(self) -> RenderedCell:
         lines = self.parsed_cell.text.split("\n")[1:]
-        clean_lines = map(lambda line: re.sub(self.comment_pattern, "", line), lines)
-        clean_text = "\n".join(clean_lines)
-        md = Panel(Markdown(clean_text), title="markdown")
+        *clean_lines, = map(lambda line: re.sub(self.comment_pattern, "", line), lines)
+        md = Panel(self.render_lines(clean_lines), title="markdown")
         text = Text(self.cell_text.format(self.cell_id))
         text.stylize(self.cell_color)
         with self.console.capture() as capture:
