@@ -1,18 +1,20 @@
 # textbook.nvim
 
-This plugin allows management and rendering of `jupyter` notebooks inside of `neovim` through `jupytext` format and `rich` components.
+This plugin allows management and rendering of `jupyter` notebooks inside of `neovim` through the `jupytext` format and `rich` components.
 
-![example1](docs/example1.gif)
+Click on the following image to see a demo:
+
+[![Alt text](https://img.youtube.com/vi/mC8kZa93uhg/0.jpg)](https://www.youtube.com/watch?v=mC8kZa93uhg)
 
 ## Installation
 
-You'll have to install some utilities and dependencies through `pip`:
+You'll need to install some utilities and dependencies through `pip`:
 
 ```sh
 pip install textbook_nvim
 ```
 
-Then you can install the plugin, for instance, with `packer`:
+After that, you can install the plugin using `packer`, for instance:
 
 ```lua
 use {"juselara1/textbook.nvim", run = ":UpdateRemotePlugins"}
@@ -20,34 +22,34 @@ use {"juselara1/textbook.nvim", run = ":UpdateRemotePlugins"}
 
 ## Usage
 
-The idea of `textbook` is to offer a non-intrusive way to edit notebook files defined as plain text. By default it uses the percent format as a cell separator but you can define a regex to parse any kind of format.
+The idea behind `textbook` is to offer a non-intrusive way to edit notebook files defined as plain text. By default, it uses the percent format as a cell separator, but you can define a regex to parse any kind of format.
 
-For instance, the following text defines python notebook:
+For instance, the following text defines a Python notebook:
 
 ```python
 # %% [markdown]
 # Markdown code...
 
 # %% [raw]
-print("hello world")
+print("Hello, world!")
 ```
 
-Where `# %% [markdown]` represents a markdown cell and `# %% [raw]` a code cell. To render this file you should run the following command to specify the current buffer as the source:
+To render this file, you should run the following command to specify the current buffer as the source:
 
 ```vim
 :TextBookBuffer
 ```
 
-Then you should open the render view:
+Then, you should open the render view:
 
 ```vim
 :TextBookOpen
 ```
 
-This will spawn a new buffer with the rendered text, there you have the following options:
+This will spawn a new buffer with the rendered text. There, you will have the following options:
 
 - `:TextBookSync`: syncs the cursor position in the same cell as the plain text file.
-- `:TextBookSelectCell [cell_id]`: when no arguments are passed selects the cell under the cursor, otherwise, selects the cell of the `cell_id`.
+- `:TextBookSelectCell [cell_id]`: when no arguments are passed, selects the cell under the cursor. Otherwise, selects the cell of the `cell_id`.
 - `:TextBookNextCell`: selects the next cell.
 - `:TextBookPrevCell`: selects the previous cell.
 - `:TextBookAddCell cell_type after`: creates a cell of type `cell_type` (`raw` or `markdown`) and can be before (`0`) or after (`1`) the cell under the cursor.
@@ -79,7 +81,7 @@ local binds = {
     {bind="<Leader>tg", command=":TextBookSelectCell"},
     {bind="<Leader>tj", command=":TextBookSelectNextCell<CR>"},
     {bind="<Leader>tk", command=":TextBookSelectPrevCell<CR>"},
-    {bind="<Leader>tc", command=":TextBookClose<CR>"},
+    {bind="<Leader>tq", command=":TextBookClose<CR>"},
     {bind="<Leader>tma", command=":TextBookAddCell markdown 1<CR>"},
     {bind="<Leader>tmb", command=":TextBookAddCell markdown 0<CR>"},
     {bind="<Leader>tra", command=":TextBookAddCell raw 1<CR>"},
