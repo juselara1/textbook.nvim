@@ -12,15 +12,26 @@ from rich.table import Table
 from rich.text import Text
 from pathlib import Path
 
+
 class RenderedCell(BaseModel):
     text: str
     cell_range: Tuple[int, int]
 
+
 class RenderedText(BaseModel):
     values: List[RenderedCell]
 
+
 class AbstractRender(ABC):
-    def __init__(self, lexer: str, comment_pattern: re.Pattern, cell_id:int, theme: str, cell_text: str, cell_color: str):
+    def __init__(
+        self,
+        lexer: str,
+        comment_pattern: re.Pattern,
+        cell_id: int,
+        theme: str,
+        cell_text: str,
+        cell_color: str,
+    ):
         self.lexer = lexer
         self.comment_pattern = comment_pattern
         self.cell_id = cell_id
@@ -28,7 +39,9 @@ class AbstractRender(ABC):
         self.cell_text = cell_text
         self.cell_color = cell_color
 
-    def setup(self, parsed_cell: ParsedCell, console: Console, init_pos: int) -> "AbstractRender":
+    def setup(
+        self, parsed_cell: ParsedCell, console: Console, init_pos: int
+    ) -> "AbstractRender":
         self.parsed_cell = parsed_cell
         self.console = console
         self.init_pos = init_pos
@@ -38,8 +51,8 @@ class AbstractRender(ABC):
     def render(self) -> RenderedCell:
         ...
 
-class CodeRender(AbstractRender):
 
+class CodeRender(AbstractRender):
     def render(self) -> RenderedCell:
         lines = self.parsed_cell.text.split("\n")[1:]
         clean_text = "\n".join(lines)
@@ -55,18 +68,21 @@ class CodeRender(AbstractRender):
         self.console.print(syntax)
         self.console.print(" ")
         return RenderedCell(
-                text=result,
-                cell_range=(self.init_pos, self.init_pos + len(result.split("\n")) - 2)
-                )
+            text=result,
+            cell_range=(self.init_pos, self.init_pos + len(result.split("\n")) - 2),
+        )
+
 
 class MarkdownEnum(Enum):
     TEXT = "TEXT"
     TABLE = "TABLE"
 
+
 class MarkdownRow(BaseModel):
     text: str
     idx: int
     md_type: MarkdownEnum
+
 
 class MarkdownRender(AbstractRender):
     table_pattern = re.compile(r"\|.+\|")
@@ -86,18 +102,13 @@ class MarkdownRender(AbstractRender):
             table.add_row(*cells)
         return table
 
-    def generate_components(self, groups: List[List[MarkdownRow]]) -> List[Union[Markdown, Table]]:
+    def generate_components(
+        self, groups: List[List[MarkdownRow]]
+    ) -> List[Union[Markdown, Table]]:
         components = []
         for group in groups:
-            if (
-                    group[0].md_type == MarkdownEnum.TEXT or
-                    len(group) < 3
-                    ):
-                components.append(
-                        Markdown(
-                            "\n".join(line.text for line in group)
-                            )
-                        )
+            if group[0].md_type == MarkdownEnum.TEXT or len(group) < 3:
+                components.append(Markdown("\n".join(line.text for line in group)))
             else:
                 components.append(self.render_table(group))
         return components
@@ -120,13 +131,14 @@ class MarkdownRender(AbstractRender):
             else:
                 groups.append([parsed_lines[i]])
 
-        
         components = self.generate_components(groups)
         return Group(*components)
 
     def render(self) -> RenderedCell:
         lines = self.parsed_cell.text.split("\n")[1:]
-        *clean_lines, = map(lambda line: re.sub(self.comment_pattern, "", line), lines)
+        (*clean_lines,) = map(
+            lambda line: re.sub(self.comment_pattern, "", line), lines
+        )
         md = Panel(self.render_lines(clean_lines), title="markdown")
         text = Text(self.cell_text.format(self.cell_id))
         text.stylize(self.cell_color)
@@ -137,35 +149,36 @@ class MarkdownRender(AbstractRender):
         self.console.print(text)
         self.console.print(md)
         return RenderedCell(
-                text="\n".join(rendered_lines),
-                cell_range=(self.init_pos, self.init_pos + len(rendered_lines) - 2)
-                )
+            text="\n".join(rendered_lines),
+            cell_range=(self.init_pos, self.init_pos + len(rendered_lines) - 2),
+        )
+
 
 class Renderer:
-    parsed_text : ParsedText
-    rendered_text : RenderedText
+    parsed_text: ParsedText
+    rendered_text: RenderedText
     lexer: str
     pattern: re.Pattern
     theme: str
     cell_text: str
     cell_color: str
     renders: Dict[str, Type[AbstractRender]] = {
-            "raw": CodeRender,
-            "markdown": MarkdownRender
-            }
+        "code": CodeRender,
+        "markdown": MarkdownRender,
+    }
 
     def __init__(self, console_kwargs: Dict = {}):
         self.console = Console(**console_kwargs)
 
     def setup(
-            self,
-            parsed_text: ParsedText,
-            lexer: str,
-            pattern: re.Pattern,
-            theme: str,
-            cell_text: str,
-            cell_color: str
-            ) -> "Renderer":
+        self,
+        parsed_text: ParsedText,
+        lexer: str,
+        pattern: re.Pattern,
+        theme: str,
+        cell_text: str,
+        cell_color: str,
+    ) -> "Renderer":
         self.parsed_text = parsed_text
         self.lexer = lexer
         self.pattern = pattern
@@ -173,22 +186,23 @@ class Renderer:
         self.cell_text = cell_text
         self.cell_color = cell_color
         return self
-    
+
     def render(self) -> "Renderer":
         self.rendered_text = RenderedText(values=[])
         init_pos = 1
         for i, cell in enumerate(self.parsed_text.values):
             self.rendered_text.values.append(
-                    self.renders[cell.cell_type](
-                        lexer=self.lexer, cell_id=i + 1,
-                        comment_pattern=self.pattern,
-                        cell_text=self.cell_text,
-                        cell_color=self.cell_color,
-                        theme=self.theme
-                        )
-                    .setup(cell, self.console, init_pos)
-                    .render()
-                    )
+                self.renders[cell.cell_type](
+                    lexer=self.lexer,
+                    cell_id=i + 1,
+                    comment_pattern=self.pattern,
+                    cell_text=self.cell_text,
+                    cell_color=self.cell_color,
+                    theme=self.theme,
+                )
+                .setup(cell, self.console, init_pos)
+                .render()
+            )
             init_pos = self.rendered_text.values[-1].cell_range[1] + 1
         return self
 
