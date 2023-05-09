@@ -43,8 +43,10 @@ class TextBook:
         self.config = TextBookConfig(
             tmp_path=self.nvim.vars.get("TextBookTmpPath") or "/tmp",
             cell_indicator=self.nvim.vars.get("TextBookCellIndicator") or "◆",
-            cell_pattern=self.nvim.vars.get("TextBookCellPattern")
-            or r"^# \%\% \[(?P<cell_type>\w+)\]",
+            cell_pattern=(
+                self.nvim.vars.get("TextBookCellPattern") or
+                r"^# \%\% \[(?P<cell_type>\w+)\]"
+                ),
             cell_separator=self.nvim.vars.get("TextBookCellSeparator") or r"# %% [{}]",
             cell_text=self.nvim.vars.get("TextBookCellText") or " Cell: {}",
             cell_color=self.nvim.vars.get("TextBookCellColor") or r"\#5180e6",
@@ -66,7 +68,7 @@ class TextBook:
             self.parser.save(parsed_path)
 
     @command("TextBookOpen", nargs=0, range="")
-    def textbook_render(self, args: Args, range=None):
+    def textbook_open(self, args: Args, range=None):
         idx = str(uuid4())
         self.parsed_path = Path(self.config.tmp_path) / (idx + "_parsed")
         self.rendered_path = Path(self.config.tmp_path) / (idx + "_rendered")
@@ -128,7 +130,7 @@ class TextBook:
             self.active_cell = int(args[0]) - 1
         self.select_cell()
 
-    @command("TextBookAddCell", nargs="*", range="")
+    @command("TextBookAddCell", nargs="*", range="") #type: ignore
     def textbook_add_cell(self, args: Args, range=None):
         if (
             hasattr(self, "tb_buffer")
@@ -177,3 +179,8 @@ class TextBook:
     @command("TextBookClose", nargs=0, range="")
     def textbook_close(self, args: Args, range=None):
         self.close()
+
+    @command("TextBookRender", nargs=0, range="")
+    def textbook_render(self, args: Args, range=None):
+        filename = self.buffer.name
+        self.nvim.api.command(f"!jupytext -s {filename}")
