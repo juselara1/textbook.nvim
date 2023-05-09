@@ -1,5 +1,8 @@
 # textbook.nvim
 
+<a href="https://pypi.python.org/pypi/textbook_nvim"><img src="https://img.shields.io/pypi/v/textbook_nvim.svg"/></a>
+<a href="https://github.com/psf/black"><img src="https://img.shields.io/badge/code%20style-black-000000.svg"/></a>
+
 This plugin allows management and rendering of `jupyter` notebooks inside of `neovim` through the `jupytext` format and `rich` components.
 
 Click on the following image to see a demo:
@@ -30,7 +33,7 @@ For instance, the following text defines a Python notebook:
 # %% [markdown]
 # Markdown code...
 
-# %% [raw]
+# %% [code]
 print("Hello, world!")
 ```
 
@@ -52,8 +55,9 @@ This will spawn a new buffer with the rendered text. There, you will have the fo
 - `:TextBookSelectCell [cell_id]`: when no arguments are passed, selects the cell under the cursor. Otherwise, selects the cell of the `cell_id`.
 - `:TextBookNextCell`: selects the next cell.
 - `:TextBookPrevCell`: selects the previous cell.
-- `:TextBookAddCell cell_type after`: creates a cell of type `cell_type` (`raw` or `markdown`) and can be before (`0`) or after (`1`) the cell under the cursor.
+- `:TextBookAddCell cell_type after`: creates a cell of type `cell_type` (`code` or `markdown`) and can be before (`0`) or after (`1`) the cell under the cursor.
 - `:TextBookConfig`: reloads the configuration.
+- `:TextBookRender`: syncs the current buffer with its paired `ipynb` file through `jupytext`.
 - `:TextBookClose`: closes the rendered view and places the cursor in the same cell as the rendered view.
 
 ## Configuration
@@ -84,8 +88,8 @@ local binds = {
     {bind="<Leader>tq", command=":TextBookClose<CR>"},
     {bind="<Leader>tma", command=":TextBookAddCell markdown 1<CR>"},
     {bind="<Leader>tmb", command=":TextBookAddCell markdown 0<CR>"},
-    {bind="<Leader>tra", command=":TextBookAddCell raw 1<CR>"},
-    {bind="<Leader>trb", command=":TextBookAddCell raw 0<CR>"},
+    {bind="<Leader>tra", command=":TextBookAddCell code 1<CR>"},
+    {bind="<Leader>trb", command=":TextBookAddCell code 0<CR>"},
 }
 
 for _, value in ipairs(binds) do
