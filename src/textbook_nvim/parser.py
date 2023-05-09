@@ -5,24 +5,29 @@ from pathlib import Path
 
 Text = List[str]
 
+
 class ParsedCell(BaseModel):
     text: str
     cell_type: str
     cell_range: Tuple[int, int]
 
+
 class ParsedText(BaseModel):
-    values : List[ParsedCell]
+    values: List[ParsedCell]
+
 
 class Parser:
-    text : Text
-    parsed_text : ParsedText
-    pattern : re.Pattern
+    text: Text
+    parsed_text: ParsedText
+    pattern: re.Pattern
 
     def set_text(self, text: Text) -> "Parser":
         self.text = text
         return self
 
-    def set_pattern(self, pattern: re.Pattern = re.compile(r"^# \%\% \[(?P<cell_type>\w+)\]")) -> "Parser":
+    def set_pattern(
+        self, pattern: re.Pattern = re.compile(r"^# \%\% \[(?P<cell_type>\w+)\]")
+    ) -> "Parser":
         self.pattern = pattern
         return self
 
@@ -38,14 +43,16 @@ class Parser:
             separator_positions.append(len(self.text))
 
         self.parsed_text = ParsedText(values=[])
-        for initial_pos, end_pos, cell_type in zip(separator_positions, separator_positions[1:], cell_types):
+        for initial_pos, end_pos, cell_type in zip(
+            separator_positions, separator_positions[1:], cell_types
+        ):
             self.parsed_text.values.append(
-                    ParsedCell(
-                        text="\n".join(self.text[initial_pos: end_pos]),
-                        cell_type=cell_type,
-                        cell_range=(initial_pos, end_pos)
-                        )
-                    )
+                ParsedCell(
+                    text="\n".join(self.text[initial_pos:end_pos]),
+                    cell_type=cell_type,
+                    cell_range=(initial_pos, end_pos),
+                )
+            )
         return self
 
     def get_parsed_text(self) -> ParsedText:
