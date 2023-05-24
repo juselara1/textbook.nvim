@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "textbook_nvim"
-version = "0.4.0"
+version = "0.5.0"
 authors = [{name = "Juan Lara", email = "julara@unal.edu.co"}]
 description = "Main python package for the textbook.nvim plugin."
 requires-python = ">3.8"
 dependencies = [
-    "pydantic", "pynvim", "rich", "click", "jupytext"
+    "pydantic", "pynvim", "rich", "click", "jupytext", "flatlatex"
 ]
 
 [tool.setuptools.packages.find]
