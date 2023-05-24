@@ -1,6 +1,7 @@
 from enum import Enum
 import re
 from abc import ABC, abstractmethod
+from flatlatex.latexfuntypes import LatexSyntaxError
 from pydantic import BaseModel
 from textbook_nvim.parser import ParsedCell, ParsedText
 from typing import Dict, List, Tuple, Type, Union
@@ -11,6 +12,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 from pathlib import Path
+from flatlatex import converter as Converter
 
 
 class RenderedCell(BaseModel):
@@ -86,6 +88,9 @@ class MarkdownRow(BaseModel):
 
 class MarkdownRender(AbstractRender):
     table_pattern = re.compile(r"\|.+\|")
+    eq_pattern = re.compile(r"\$(?P<equation>[^\n]+)\$")
+    eq_block_pattern = re.compile(r"\$\$\n(?P<equation>[^\$]+)\$\$")
+    eq_converter = Converter()
     sep_validator = re.compile(r"[\-\s]+")
 
     def render_table(self, group: List[MarkdownRow]) -> Union[Markdown, Table]:
@@ -101,6 +106,30 @@ class MarkdownRender(AbstractRender):
                 return Markdown("\n".join(line.text for line in group))
             table.add_row(*cells)
         return table
+
+    def render_equations(self, lines: List[str]) -> List[str]:
+        text = "\n".join(lines)
+
+        def parse_line_eq(match: re.Match):
+            text = match.group("equation")
+            try:
+                render = f" `{self.eq_converter.convert(text)}` "
+            except LatexSyntaxError:
+                render = f" ${text}$ "
+            return render
+
+        line_eq = re.sub(self.eq_pattern, parse_line_eq, text)
+
+        def parse_block_eq(match: re.Match):
+            text = match.group("equation")
+            try:
+                render = f"\n`{self.eq_converter.convert(text)}`\n"
+            except LatexSyntaxError:
+                render = f"$$\n{text}$$\n"
+            return render
+
+        block_eq = re.sub(self.eq_block_pattern, parse_block_eq, line_eq)
+        return block_eq.split("\n")
 
     def generate_components(
         self, groups: List[List[MarkdownRow]]
@@ -139,7 +168,8 @@ class MarkdownRender(AbstractRender):
         (*clean_lines,) = map(
             lambda line: re.sub(self.comment_pattern, "", line), lines
         )
-        md = Panel(self.render_lines(clean_lines), title="markdown")
+        eq_lines = self.render_equations(clean_lines)
+        md = Panel(self.render_lines(eq_lines), title="markdown")
         text = Text(self.cell_text.format(self.cell_id))
         text.stylize(self.cell_color)
         with self.console.capture() as capture:
